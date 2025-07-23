@@ -1,29 +1,30 @@
-name: Daily Update
+name: Daily File Update
 
 on:
   schedule:
-    - cron: "0 6 * * *"  # Runs every day at 6 AM UTC
+    - cron: '*/10 * * * *'  # Runs every 10 minutes
   workflow_dispatch:
 
 jobs:
-  update:
+  update-file:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Repository
+      - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.x
-
-      - name: Run Python Script
-        run: python update.py
-
-      - name: Commit and Push
+      - name: Update file
         run: |
-          git config --global user.name 'ryuk00e'
-          git config --global user.email 'csoni_be22@thapar.edu'
-          git add log.txt
-          git commit -m "Daily update: $(date)" || echo "No changes to commit"
-          git push
+          echo "Last updated: $(date -u +%s%N)" > daily-update.txt
+
+      - name: Set up Git identity
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+
+      - name: Commit and Push changes
+        run: |
+          git add daily-update.txt
+          git commit -m "Auto update: $(date -u)" || echo "⚠ Nothing to commit"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git push origin HEAD:main
